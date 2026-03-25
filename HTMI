@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Space Waves - MeetThaakor</title>
+
+<style>
+body {
+  margin:0;
+  overflow:hidden;
+  font-family:Arial;
+  background:black;
+  color:white;
+  text-align:center;
+}
+
+#menu {
+  position:absolute;
+  top:40%;
+  width:100%;
+}
+
+button {
+  padding:12px 20px;
+  margin:10px;
+  font-size:18px;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+}
+
+canvas {
+  display:none;
+}
+
+#ui {
+  position:absolute;
+  top:10px;
+  width:100%;
+  display:none;
+}
+
+#bar {
+  width:80%;
+  height:15px;
+  background:#444;
+  margin:auto;
+  border-radius:10px;
+}
+
+#fill {
+  height:100%;
+  width:0%;
+  background:#0f0;
+}
+
+#gameOver {
+  position:absolute;
+  top:40%;
+  width:100%;
+  display:none;
+}
+</style>
+</head>
+
+<body>
+
+<h1>🚀 Space Waves</h1>
+
+<div id="menu">
+  <button onclick="startGame('level')">Level Mode</button>
+  <button onclick="startGame('score')">High Score</button>
+  <button onclick="startGame('race')">Race Mode</button>
+</div>
+
+<div id="ui">
+  <div id="bar"><div id="fill"></div></div>
+  <p id="scoreText">0%</p>
+</div>
+
+<div id="gameOver">
+  <h2>GAME OVER</h2>
+  <p id="finalScore"></p>
+  <button onclick="location.reload()">Restart</button>
+</div>
+
+<canvas id="game"></canvas>
+
+<!-- AUDIO -->
+<audio id="music" loop src="https://cdn.pixabay.com/audio/2022/03/15/audio_115b9b3c6f.mp3"></audio>
+<audio id="die" src="https://cdn.pixabay.com/audio/2022/03/15/audio_4c0c4c7d2c.mp3"></audio>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+canvas.width = innerWidth;
+canvas.height = innerHeight;
+
+let mode = "level";
+let running = false;
+
+let player = {
+  x:100,
+  y:200,
+  size:20,
+  speedY:3
+};
+
+let direction = 1;
+let progress = 0;
+let speed = 5;
+
+let obstacles = [];
+
+function startGame(m) {
+  mode = m;
+  document.getElementById("menu").style.display="none";
+  document.getElementById("ui").style.display="block";
+  canvas.style.display="block";
+
+  document.getElementById("music").play();
+
+  running = true;
+  loop();
+}
+
+// CONTROL (wave)
+document.addEventListener("keydown", e=>{
+  if(e.code==="Space") direction = -direction;
+});
+
+document.addEventListener("touchstart", ()=>{
+  direction = -direction;
+});
+
+// spawn walls
+setInterval(()=>{
+  obstacles.push({
+    x:canvas.width,
+    gapY:Math.random()*canvas.height,
+    gap:150
+  });
+},1500);
+
+function drawPlayer() {
+  ctx.fillStyle="cyan";
+  ctx.beginPath();
+  ctx.moveTo(player.x, player.y);
+  ctx.lineTo(player.x+20, player.y+10);
+  ctx.lineTo(player.x, player.y+20);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawObstacles(o){
+  ctx.fillStyle="white";
+
+  // top
+  ctx.fillRect(o.x,0,40,o.gapY);
+  // bottom
+  ctx.fillRect(o.x,o.gapY+o.gap,40,canvas.height);
+}
+
+function collision(o){
+  if(
+    player.x < o.x+40 &&
+    player.x+20 > o.x
+  ){
+    if(player.y < o.gapY || player.y > o.gapY+o.gap){
+      gameOver();
+    }
+  }
+
+  if(player.y < 0 || player.y > canvas.height){
+    gameOver();
+  }
+}
+
+function gameOver(){
+  running=false;
+  document.getElementById("music").pause();
+  document.getElementById("die").play();
+
+  document.getElementById("gameOver").style.display="block";
+  document.getElementById("finalScore").innerText="Score: "+Math.floor(progress);
+}
+
+function loop(){
+  if(!running) return;
+
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  // player wave motion
+  player.y += player.speedY * direction;
+
+  drawPlayer();
+
+  // obstacles
+  for(let i=0;i<obstacles.length;i++){
+    let o = obstacles[i];
+    o.x -= speed;
+
+    drawObstacles(o);
+    collision(o);
+  }
+
+  // progress
+  progress += 0.1;
+  document.getElementById("fill").style.width = progress+"%";
+  document.getElementById("scoreText").innerText = Math.floor(progress)+"%";
+
+  // level complete
+  if(mode==="level" && progress >= 100){
+    alert("Level Complete!");
+    location.reload();
+  }
+
+  requestAnimationFrame(loop);
+}
+</script>
+
+</body>
+</html>
